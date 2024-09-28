@@ -59,6 +59,7 @@ jobs:
           fi
           POST_COMMIT=$(git rev-parse HEAD)
           
+          source ~/.bashrc
           mvn install
           sudo rm -rf /opt/tomcat/webapps/ROOT
           sudo cp -r /home/ubuntu/modules/Schooly/target/Schooly-1.0-SNAPSHOT /opt/tomcat/webapps/ROOT

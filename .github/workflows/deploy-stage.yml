@@ -60,6 +60,8 @@ jobs:
           POST_COMMIT=$(git rev-parse HEAD)
           
           source ~/.bashrc
+          export M2_HOME='/opt/apache-maven-3.9.9'
+          export PATH="$M2_HOME/bin:$PATH"
           mvn install
           sudo rm -rf /opt/tomcat/webapps/ROOT
           sudo cp -r /home/ubuntu/modules/Schooly/target/Schooly-1.0-SNAPSHOT /opt/tomcat/webapps/ROOT

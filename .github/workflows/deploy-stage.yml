@@ -1,0 +1,65 @@
+name: Continuous Deployment for Schooly Project.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Code Checkout
+      uses: actions/checkout@v4
+    
+    - name: Set SSH connection string based on branch
+      env:
+        GITHUB_HEAD_REF: ${{ github.head_ref }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        SSH_DEV_USER: ${{ secrets.SSH_DEV_USER }}
+        SSH_DEV_HOST: ${{ secrets.SSH_DEV_HOST }}
+        SSH_DEV_PORT: ${{ secrets.SSH_DEV_PORT }}
+        SSH_DEV_KEY:  ${{ secrets.SSH_DEV_KEY }}
+
+        # SSH_QAS_USER: ${{ secrets.SSH_QAS_USER }}
+        # SSH_QAS_HOST: ${{ secrets.SSH_QAS_HOST }}
+        # SSH_QAS_PORT: ${{ secrets.SSH_QAS_PORT }}
+        # SSH_QAS_KEY:  ${{ secrets.SSH_QAS_KEY }}
+      run: |
+
+        if [[ "$GITHUB_HEAD_REF" == "main" || "$GITHUB_REF_NAME" == "main" ]]; then
+          echo "SSH_CONNECTION=$SSH_DEV_USER@$SSH_DEV_HOST:$SSH_DEV_PORT" >> $GITHUB_ENV
+          echo "SSH_PRIVATE_KEY<<EOF" >> $GITHUB_ENV
+          echo "$SSH_DEV_KEY" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "BRANCH_NAME=main" >> $GITHUB_ENV
+        fi
+
+    - name: SSH Connection and console actions.
+      uses: JimCronqvist/action-ssh@master
+      env:
+        BRANCH_NAME: ${{ env.BRANCH_NAME }}
+      with:
+        hosts: ${{ env.SSH_CONNECTION }}
+        privateKey: ${{ env.SSH_PRIVATE_KEY }}
+        debug: false
+        
+        command: |
+          cd /home/ubuntu/modules/Schooly
+
+          PREV_COMMIT=$(git rev-parse HEAD)
+          git checkout .
+          git pull origin $BRANCH_NAME
+          PULL_EXIT_CODE=$?
+
+          if [ $PULL_EXIT_CODE -ne 0 ]; then
+            echo "Git pull failed with exit code $PULL_EXIT_CODE"
+            exit 1
+          fi
+          POST_COMMIT=$(git rev-parse HEAD)
+          
+          mvn install
+          sudo rm -rf /opt/tomcat/webapps/ROOT
+          sudo cp -r /home/ubuntu/modules/Schooly/target/Schooly-1.0-SNAPSHOT /opt/tomcat/webapps/ROOT
+          sudo systemctl restart tomcat

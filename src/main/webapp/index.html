@@ -3,8 +3,53 @@
     <head>
         <title>Start Page</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" type="text/css" href="./style.css" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <style>
+            /* Estilo para el mapa */
+            #map {
+                height: 400px; /* Altura del mapa */
+                width: 100%; /* Ancho del mapa */
+            }
+        </style>
     </head>
     <body>
         <h1>Hello World!</h1>
+ 
+        <h1>Mi Ubicación Actual en el Mapa</h1>
+
+        
+        <div id="map"></div>
+
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <script>
+            // Inicializa el mapa
+            const map = L.map('map').setView([0, 0], 2); // Mapa centrado en el ecuador
+
+            // Agrega una capa de mapa de OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // Verifica si el navegador soporta la geolocalización
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    // Centra el mapa en la ubicación actual
+                    map.setView([lat, lng], 13);
+
+                    // Agrega un marcador en la ubicación actual
+                    const marker = L.marker([lat, lng]).addTo(map);
+                    marker.bindPopup("¡Estás aquí!").openPopup();
+                }, function() {
+                    alert("Error: No se puede obtener la ubicación.");
+                });
+            } else {
+                alert("Error: Tu navegador no soporta geolocalización.");
+            }
+        </script>
     </body>
 </html>
